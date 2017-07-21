@@ -13,7 +13,7 @@ object Main {
        @JvmStatic fun main(args: Array<String>){
           val test = Test()
            for(i in 1..10){
-               val what = Random().nextInt(5)+1
+               val what = Random().nextInt(10)+1
                L.log(message ="send:$what")
                test.sendMessage(what)
            }
@@ -64,8 +64,13 @@ object Main {
              }
 
              override fun processMessage(msg: Message): Boolean {
-                 transitionTo(msg)
-                 return true
+                 if(msg.what <=5 ){
+                     transitionTo(msg)
+                 }else{
+                     return NOT_HANDLED
+                 }
+
+                 return HANDLED
              }
          }
     }

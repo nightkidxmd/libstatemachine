@@ -182,7 +182,7 @@ abstract class StateMachine : Looper {
                 while (!curStateInfo?.state?.processMessage(message)!!) {
                     curStateInfo = curStateInfo?.parent
                     if (curStateInfo == null) {
-                        stateMachine?.unandleMessage(message)
+                        stateMachine?.unhandleMessage(message)
                         break
                     }
                 }
@@ -281,7 +281,7 @@ abstract class StateMachine : Looper {
         smHandler.addState(state, parent)
     }
 
-    protected fun unandleMessage(msg:Message){
+    protected fun unhandleMessage(msg:Message){
         L.loge(message = " - unhandledMessage: msg.what=${msg.what}")
     }
 
