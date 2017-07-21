@@ -30,11 +30,11 @@ object Main {
             val MESSAGE_STATE5 = 5
         }
 
-        private val state1 = MyState(this,1)
-        private val state2 = MyState(this,2)
-        private val state3 = MyState(this,3)
-        private val state4 = MyState(this,4)
-        private val state5 = MyState(this,5)
+        private val state1 = MyState(1)
+        private val state2 = MyState(2)
+        private val state3 = MyState(3)
+        private val state4 = MyState(4)
+        private val state5 = MyState(5)
 
         private val transitionMap = mapOf(
                 MESSAGE_STATE1 to state1,
@@ -58,12 +58,12 @@ object Main {
             transitionTo(transitionMap[msg.what]!!)
         }
 
-         class MyState(val stateMachine: Test,val data:Int):main.java.com.tuyou.tsd.statemachine.SState(){
+         inner class MyState(val data:Int):main.java.com.tuyou.tsd.statemachine.SState(){
              override fun toString(): String{
                  return "MyState(data=$data)"
              }
 
-             override fun processMessage(msg: Message): Boolean = with(stateMachine){
+             override fun processMessage(msg: Message): Boolean {
                  transitionTo(msg)
                  return true
              }
