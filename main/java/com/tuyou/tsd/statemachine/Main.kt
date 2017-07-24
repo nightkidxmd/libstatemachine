@@ -64,12 +64,14 @@ object Main {
              }
 
              override fun processMessage(msg: Message): Boolean {
-                 if(msg.what <=5 ){
-                     transitionTo(msg)
-                 }else{
-                     return NOT_HANDLED
+                 when(msg.what){
+                     1,2,3,4,5 ->{
+                         transitionTo(msg)
+                     }
+                     else->{
+                         return NOT_HANDLED
+                     }
                  }
-
                  return HANDLED
              }
          }
