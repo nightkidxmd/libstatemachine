@@ -161,17 +161,16 @@ abstract class StateMachine : Looper {
         }
 
         override fun handleMessage(msg: Message) {
-            var msgProcessedState: IState? = null
             if (isConstructionCompleted) {
-                msgProcessedState = processMsg(msg)
-            } else if (msg?.what == SM_INIT_CMD && msg?.obj == smHandlerObj) {
+                processMsg(msg)
+            } else if (msg.what == SM_INIT_CMD && msg.obj == smHandlerObj) {
                 isConstructionCompleted = true
                 invokeEnterMethods(0)
             } else {
                 throw  RuntimeException("StateMachine.handleMessage: "
                         + "The start method not called, received msg: " + msg)
             }
-            performTransitions(msgProcessedState,msg)
+            performTransitions()
         }
 
         private fun processMsg(message: Message): IState? {
@@ -182,7 +181,7 @@ abstract class StateMachine : Looper {
                 while (!curStateInfo?.state?.processMessage(message)!!) {
                     curStateInfo = curStateInfo?.parent
                     if (curStateInfo == null) {
-                        stateMachine?.unhandleMessage(message)
+                        stateMachine?.unhandledMessage(message)
                         break
                     }
                 }
@@ -208,8 +207,7 @@ abstract class StateMachine : Looper {
 
         private fun isQuit(msg: Message?) = (msg?.what == SM_QUIT_CMD) && (msg?.obj == smHandlerObj)
 
-        private fun performTransitions(state: IState?, msg: Message?) {
-//            val orgState = stateStack[stateStackTopIndex]?.state
+        private fun performTransitions() {
             var destState = this.destState
             if(destState != null){
                 while (true) {
@@ -273,15 +271,15 @@ abstract class StateMachine : Looper {
         smHandler.transitionTo(smHandler.haltingState)
     }
 
-    fun setInitialState(state: IState) {
+    protected fun setInitialState(state: IState) {
         smHandler.initialState = state
     }
 
-    fun addState(state: IState, parent: IState? = null) {
+    protected fun addState(state: IState, parent: IState? = null) {
         smHandler.addState(state, parent)
     }
 
-    protected fun unhandleMessage(msg:Message){
+    protected fun unhandledMessage(msg:Message){
         L.loge(message = " - unhandledMessage: msg.what=${msg.what}")
     }
 

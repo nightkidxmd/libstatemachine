@@ -6,7 +6,7 @@ import main.java.com.tuyou.tsd.statemachine.message.Message
 /**
  * Created by XMD on 2017/7/20.
  */
-abstract class SState :IState{
+abstract class SState:IState {
     override fun enter() {
         if(DEBUG){
             L.log("SState","enter-->$name{${toString()}}")
