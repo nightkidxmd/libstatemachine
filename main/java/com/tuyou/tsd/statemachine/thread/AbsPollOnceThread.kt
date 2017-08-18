@@ -1,11 +1,10 @@
 package main.java.com.tuyou.tsd.statemachine.thread
 
 
-
 /**
  * Created by XMD on 2017/7/21.
  */
-abstract class AbsPollOnceThread :Thread{
+abstract class AbsPollOnceThread : Thread {
     constructor() : super()
     constructor(target: Runnable?) : super(target)
     constructor(target: (() -> Unit)?) : super(target)
@@ -26,34 +25,37 @@ abstract class AbsPollOnceThread :Thread{
 
     override fun run() {
         onStart()
-        while(isRunning){
+        while (isRunning) {
             onPollOnce()
-            synchronized(lock,block = {
-                lock.wait()
+            synchronized(lock, block = {
+                if (isRunning) {
+                    lock.wait()
+                }
             })
-            if(!isRunning){
+            if (!isRunning) {
                 break
             }
         }
         onExit()
     }
 
-    fun exit(){
-        synchronized(lock,block = {
+    fun exit() {
+        synchronized(lock, block = {
             isRunning = false
             lock.notify()
         })
     }
 
 
-    fun pollOnce(){
-        synchronized(lock,block = {
+    fun pollOnce() {
+        synchronized(lock, block = {
             lock.notify()
         })
     }
 
     //-----------------------------------------------------
     abstract fun onPollOnce()
+
     abstract fun onStart()
     abstract fun onExit()
 }
