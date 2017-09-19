@@ -1,6 +1,6 @@
 ### Common Google Statemachine
 #### Illustration for test code
-```
+```kotlin
         init {
             addState(state1)
             addState(state2, state1)
@@ -14,7 +14,7 @@
 ```
 We build tree using <code>addState</code>, and set initial state with <code>setInitialState</code> and <code>start</code>
 The tree built with above code is like below
-```
+```kotlin
          state1 ---> initial state
          /   \
      state2  state3
@@ -27,7 +27,7 @@ Let's see the sample below.
 1.  For each state, MESSAGE_STATE1, MESSAGE_STATE4, MESSAGE_STATE5 will transition to each state with <code>transitionTo</code> ;
 2.  state1,3,4 deffer MESSAGE_STATE2, state5 will handle MESSAGE_STATE2 and transition to state2 
 3.   all but state3 will handle MESSAGE_STATE3 and <code>sendMessageAtFrontOfQueue</code>
-```
+```kotlin
             override fun processMessage(msg: Message): Boolean {
                 L.log(message = "$this process:$msg")
                 when (msg.what) {
@@ -63,7 +63,7 @@ We send message from MESSAGE_STATE1 to MESSAGE_STATE5 then <code>quit</code>
             test.sendMessage(i)
         }
         test.quit()
-```
+```kotlin
 enter state1 // initial
 //send message start
 state1 process MESSAGE_STATE1
