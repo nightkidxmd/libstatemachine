@@ -1,7 +1,9 @@
 package com.tuyou.tsd.statemachine
+import main.java.com.tuyou.tsd.statemachine.SState
 import main.java.com.tuyou.tsd.statemachine.StateMachine
 import main.java.com.tuyou.tsd.statemachine.log.L
 import main.java.com.tuyou.tsd.statemachine.message.Message
+import main.java.com.tuyou.tsd.statemachine.thread.AbsPollOnceThread
 import java.util.*
 
 /**
@@ -10,19 +12,51 @@ import java.util.*
 object Main {
 
 
-       @JvmStatic fun main(args: Array<String>){
-          val test = Test()
-           for(i in 1..10){
-               val what = Random().nextInt(10)+1
-               L.log(message ="send:$what")
-               test.sendMessage(what)
-           }
-           test.quit()
+    @JvmStatic fun main(args: Array<String>) {
+//        with(Looper("test", object : Handler() {
+//            private var sum = 0
+//            override fun handleMessage(msg: Message) {
+//                sum += msg.what
+//                L.log(message = "$sum  ${msg.what}")
+//            }
+//        })) {
+//            start()
+//            for (i in 1..10000) {
+//                Thread() {
+//                    L.loge(message = "dispatchMessage_$i")
+//                    dispatchMessage(Message(2))
+//                }.start()
+//
+//            }
+//               exit()
+//        }
+        val test = Test()
+        for(i in 1..10){
+            val what = i//Random().nextInt(10)+1
+//               L.log(message ="send:$what")
+            test.sendMessage(what)
+        }
+        test.quit()
+    }
+
+    private class TestThread : AbsPollOnceThread() {
+        override fun onPollOnce() {
+            L.log(message = "onPollOnce")
         }
 
+        override fun onStart() {
+            L.log(message = "onStart")
+        }
 
-    private class Test:StateMachine("test"){
-        companion object{
+        override fun onExit() {
+            L.log(message = "onExit")
+        }
+
+    }
+
+
+    private class Test : StateMachine("test") {
+        companion object {
             val MESSAGE_STATE1 = 1
             val MESSAGE_STATE2 = 2
             val MESSAGE_STATE3 = 3
@@ -46,34 +80,44 @@ object Main {
 
         init {
             addState(state1)
-            addState(state2,state1)
-            addState(state3,state1)
-            addState(state4,state3)
-            addState(state5,state3)
+            addState(state2, state1)
+            addState(state3, state1)
+            addState(state4, state3)
+            addState(state5, state3)
             setInitialState(state1)
             start()
         }
 
-        fun transitionTo(msg: Message){
+        fun transitionTo(msg: Message) {
             transitionTo(transitionMap[msg.what]!!)
         }
 
-         inner class MyState(val data:Int):main.java.com.tuyou.tsd.statemachine.SState(){
-             override fun toString(): String{
-                 return "MyState(data=$data)"
-             }
+        inner class MyState(val data: Int) : SState() {
+            override fun toString(): String {
+                return "MyState(data=$data)"
+            }
 
-             override fun processMessage(msg: Message): Boolean {
-                 when(msg.what){
-                     1,2,3,4,5 ->{
-                         transitionTo(msg)
-                     }
-                     else->{
-                         return NOT_HANDLED
-                     }
-                 }
-                 return HANDLED
-             }
-         }
+            override fun processMessage(msg: Message): Boolean {
+                L.log(message = "$this process:$msg")
+                when (msg.what) {
+                    MESSAGE_STATE1, MESSAGE_STATE4, MESSAGE_STATE5 -> {
+                        transitionTo(msg)
+                    }
+                    MESSAGE_STATE2 ->{
+                        deferMessage(msg)
+                    }
+                    MESSAGE_STATE3->{
+                        if(data != MESSAGE_STATE3){
+                            sendMessage(msg.what)
+                            transitionTo(msg)
+                        }
+                    }
+                    else -> {
+                        return NOT_HANDLED
+                    }
+                }
+                return HANDLED
+            }
+        }
     }
 }

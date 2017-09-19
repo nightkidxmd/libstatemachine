@@ -1,5 +1,7 @@
 package main.java.com.tuyou.tsd.statemachine.thread
 
+import java.util.concurrent.Semaphore
+
 
 /**
  * Created by XMD on 2017/7/21.
@@ -20,10 +22,10 @@ abstract class AbsPollOnceThread : Thread {
     constructor(group: ThreadGroup?, target: (() -> Unit)?, name: String?, stackSize: Long) : super(group, target, name, stackSize)
 
     private val lock = Object()
-
     protected var isRunning = true
-
+    private val semaphore = Semaphore(0)
     override fun run() {
+        semaphore.release()
         onStart()
         while (isRunning) {
             onPollOnce()
@@ -46,16 +48,18 @@ abstract class AbsPollOnceThread : Thread {
         })
     }
 
+    override fun start() {
+        super.start()
+        semaphore.acquire()
+    }
 
     fun pollOnce() {
         synchronized(lock, block = {
             lock.notify()
         })
     }
-
     //-----------------------------------------------------
     abstract fun onPollOnce()
-
     abstract fun onStart()
     abstract fun onExit()
 }
