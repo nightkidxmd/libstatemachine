@@ -31,10 +31,8 @@ object Main {
 //               exit()
 //        }
         val test = Test()
-        for(i in 1..10){
-            val what = i//Random().nextInt(10)+1
-//               L.log(message ="send:$what")
-            test.sendMessage(what)
+        for(i in 1..5){
+            test.sendMessage(i)
         }
         test.quit()
     }
@@ -104,11 +102,17 @@ object Main {
                         transitionTo(msg)
                     }
                     MESSAGE_STATE2 ->{
-                        deferMessage(msg)
+                        if(data == MESSAGE_STATE5){
+                            transitionTo(msg)
+                        }else if(data == MESSAGE_STATE2){
+                            //ignore
+                        }else{
+                            deferMessage(msg)
+                        }
                     }
                     MESSAGE_STATE3->{
                         if(data != MESSAGE_STATE3){
-                            sendMessage(msg.what)
+                            sendMessageAtFrontOfQueue(msg.what)
                             transitionTo(msg)
                         }
                     }
