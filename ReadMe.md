@@ -63,6 +63,8 @@ We send message from MESSAGE_STATE1 to MESSAGE_STATE5 then <code>quit</code>
             test.sendMessage(i)
         }
         test.quit()
+```
+The whole progress is:
 ```kotlin
 enter state1 // initial
 //send message start
