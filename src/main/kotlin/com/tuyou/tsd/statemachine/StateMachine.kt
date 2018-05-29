@@ -1,10 +1,10 @@
-package main.java.com.tuyou.tsd.statemachine
+package com.tuyou.tsd.statemachine
 
-import main.java.com.tuyou.tsd.statemachine.log.L
-import main.java.com.tuyou.tsd.statemachine.message.Message
-import main.java.com.tuyou.tsd.statemachine.message.MessageQueue
-import main.java.com.tuyou.tsd.statemachine.thread.Handler
-import main.java.com.tuyou.tsd.statemachine.thread.Looper
+import com.tuyou.tsd.statemachine.log.L
+import com.tuyou.tsd.statemachine.message.Message
+import com.tuyou.tsd.statemachine.message.LinkedMessageQueue
+import com.tuyou.tsd.statemachine.thread.Handler
+import com.tuyou.tsd.statemachine.thread.Looper
 import java.util.*
 
 
@@ -17,7 +17,6 @@ abstract class StateMachine : Looper {
     private constructor(name: String, smHandler: SmHandler) : super(name, smHandler) {
         this.smHandler = smHandler
         this.smHandler.stateMachine = this
-
     }
 
     private val smHandler: SmHandler
@@ -28,17 +27,17 @@ abstract class StateMachine : Looper {
     }
 
     companion object {
-        val HANDLED = true
-        val NOT_HANDLED = false
+        const val HANDLED = true
+        const val NOT_HANDLED = false
 
-        private val SM_QUIT_CMD = -1
-        private val SM_INIT_CMD = -2
+
+        private const val SM_QUIT_CMD = -1
+        private const val SM_INIT_CMD = -2
     }
 
-    private class SmHandler() : Handler() {
-
+    private class SmHandler : Handler() {
         private val smHandlerObj = Any()
-        private val defferMessageQueue: MessageQueue = MessageQueue()
+        private val defferMessageQueue: LinkedMessageQueue = LinkedMessageQueue()
         val haltingState = HaltingState()
         private val quittingState = QuittingState()
         private val stateInfoMap = HashMap<IState, StateInfo>()
@@ -67,14 +66,14 @@ abstract class StateMachine : Looper {
         private var tempStateStack = emptyArray<StateInfo?>()
         private var tempStateStackCount = 0
 
-        inner class HaltingState:SState(){
+        inner class HaltingState: SState(){
             override fun processMessage(msg: Message): Boolean = with(stateMachine!!){
                 haledProcessMessage(msg)
                 return HANDLED
             }
         }
 
-        private class QuittingState:SState(){
+        private class QuittingState: SState(){
             override fun processMessage(msg: Message): Boolean {
                 return NOT_HANDLED
             }
@@ -113,18 +112,17 @@ abstract class StateMachine : Looper {
         }
 
         fun deferMessage(message: Message) {
-            defferMessageQueue.addTail(message)
+            defferMessageQueue.addTail(message.copy())
         }
 
         fun completeConstruction() = with(stateMachine!!) {
             var maxDepth = 0
-            for (si in stateInfoMap.values) {
-                if (maxDepth < si.depth) {
-                    maxDepth = si.depth
-                }
-            }
-            stateStack = kotlin.arrayOfNulls<StateInfo>(maxDepth)
-            tempStateStack = kotlin.arrayOfNulls<StateInfo>(maxDepth)
+            stateInfoMap.values
+                    .asSequence()
+                    .filter { maxDepth < it.depth }
+                    .forEach { maxDepth = it.depth }
+            stateStack = arrayOfNulls(maxDepth)
+            tempStateStack = arrayOfNulls(maxDepth)
             setupInitialStateStack()
             sendMessageAtFrontOfQueue(what = SM_INIT_CMD, obj = smHandlerObj)
         }
@@ -179,7 +177,7 @@ abstract class StateMachine : Looper {
                 transitionTo(quittingState)
             } else {
                 while (!curStateInfo?.state?.processMessage(message)!!) {
-                    curStateInfo = curStateInfo?.parent
+                    curStateInfo = curStateInfo.parent
                     if (curStateInfo == null) {
                         stateMachine?.unhandledMessage(message)
                         break
@@ -205,7 +203,7 @@ abstract class StateMachine : Looper {
             }
         }
 
-        private fun isQuit(msg: Message?) = (msg?.what == SM_QUIT_CMD) && (msg?.obj == smHandlerObj)
+        private fun isQuit(msg: Message?) = (msg?.what == SM_QUIT_CMD) && (msg.obj == smHandlerObj)
 
         private fun performTransitions() {
             var destState = this.destState
@@ -250,7 +248,7 @@ abstract class StateMachine : Looper {
             while (true) {
                 try {
                     sendMessageAtFrontOfQueue(defferMessageQueue.removeLast())
-                } catch (e: NoSuchElementException) {
+                } catch (e: Exception) {
                     break
                 }
             }
@@ -279,35 +277,35 @@ abstract class StateMachine : Looper {
         smHandler.addState(state, parent)
     }
 
-    protected fun unhandledMessage(msg:Message){
+    protected fun unhandledMessage(msg: Message){
         L.loge(message = " - unhandledMessage: msg.what=${msg.what}")
     }
 
-    open protected fun haledProcessMessage(msg:Message){
+    protected open fun haledProcessMessage(msg: Message){
 
     }
 
-    open protected fun onHalting(){
+    protected open fun onHalting(){
 
     }
 
-    open protected fun onQuitting(){
-
+    protected open fun onQuitting(){
+        L.log(message = " - onQuitting")
     }
 
     fun sendMessageAtFrontOfQueue(message: Message) =
             dispatchMessageAtFrontOfQueue(message)
 
     fun sendMessageAtFrontOfQueue(what: Int, obj: Any? = null, arg1: Int = 0, arg2: Int = 0) =
-            sendMessageAtFrontOfQueue(Message(what = what, obj = obj, arg1 = arg1, arg2 = arg2))
+            sendMessageAtFrontOfQueue(Message.obtain(what = what, obj = obj, arg1 = arg1, arg2 = arg2))
 
     fun sendMessage(message: Message) = dispatchMessage(message)
 
-    fun sendMessage(what: Int, obj: Any? = null, arg1: Int = 0, arg2: Int = 0) = sendMessage(Message(what = what, obj = obj, arg1 = arg1, arg2 = arg2))
+    fun sendMessage(what: Int, obj: Any? = null, arg1: Int = 0, arg2: Int = 0) = sendMessage(Message.obtain(what = what, obj = obj, arg1 = arg1, arg2 = arg2))
 
     fun deferMessage(message: Message) = smHandler.deferMessage(message)
 
-    fun deferMessage(what: Int, obj: Any? = null, arg1: Int = 0, arg2: Int = 0) = deferMessage(Message(what = what, obj = obj, arg1 = arg1, arg2 = arg2))
+    fun deferMessage(what: Int, obj: Any? = null, arg1: Int = 0, arg2: Int = 0) = deferMessage(Message.obtain(what = what, obj = obj, arg1 = arg1, arg2 = arg2))
 
     fun quit(){
         smHandler.quit()

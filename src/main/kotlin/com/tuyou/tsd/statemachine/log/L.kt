@@ -1,4 +1,4 @@
-package main.java.com.tuyou.tsd.statemachine.log
+package com.tuyou.tsd.statemachine.log
 
 import java.text.SimpleDateFormat
 import java.util.*
@@ -33,14 +33,17 @@ object L {
         val _tag = "${tag ?: getTag(stackTrace)}:"
         val fileName = stackTrace.fileName
         val lineNumber = stackTrace.lineNumber
-        when (type) {
-            LogType.OUT -> {
-                logger.log(time, tid, _tag, message, fileName, lineNumber)
-            }
-            LogType.ERR -> {
-                logger.loge(time, tid, _tag, message, fileName, lineNumber)
+        with(LogMessage(time, tid, _tag, message, fileName, lineNumber)){
+            when (type) {
+                LogType.OUT -> {
+                    logger.log(this)
+                }
+                LogType.ERR -> {
+                    logger.loge(this)
+                }
             }
         }
+
     }
 
     private fun getStackTrackElement(index: Int = 3) = Thread.currentThread().stackTrace[index]

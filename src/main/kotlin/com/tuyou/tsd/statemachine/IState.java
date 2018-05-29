@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-package main.java.com.tuyou.tsd.statemachine;
+package com.tuyou.tsd.statemachine;
 
 
-import main.java.com.tuyou.tsd.statemachine.message.Message;
+import com.tuyou.tsd.statemachine.message.Message;
 
 public interface IState {
 

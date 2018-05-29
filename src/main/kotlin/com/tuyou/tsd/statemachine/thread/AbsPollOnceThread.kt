@@ -1,4 +1,4 @@
-package main.java.com.tuyou.tsd.statemachine.thread
+package com.tuyou.tsd.statemachine.thread
 
 import java.util.concurrent.Semaphore
 
@@ -41,7 +41,7 @@ abstract class AbsPollOnceThread : Thread {
         onExit()
     }
 
-    fun exit() {
+    open fun exit() {
         synchronized(lock, block = {
             isRunning = false
             lock.notify()

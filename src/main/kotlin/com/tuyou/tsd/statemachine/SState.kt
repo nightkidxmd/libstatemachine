@@ -1,7 +1,7 @@
-package main.java.com.tuyou.tsd.statemachine
+package com.tuyou.tsd.statemachine
 
-import main.java.com.tuyou.tsd.statemachine.log.L
-import main.java.com.tuyou.tsd.statemachine.message.Message
+import com.tuyou.tsd.statemachine.log.L
+import com.tuyou.tsd.statemachine.message.Message
 
 /**
  * Created by XMD on 2017/7/20.
