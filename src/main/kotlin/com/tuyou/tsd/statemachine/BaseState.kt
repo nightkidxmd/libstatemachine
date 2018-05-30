@@ -19,6 +19,6 @@ abstract class BaseState(private val stateMachine: BaseStateMachine):SState(){
         return stateMachine.onProcessMessage(msg) || super.processMessage(msg)
     }
 
-    override fun toString(): String = name
+    override fun toString(): String = getName()
 
 }

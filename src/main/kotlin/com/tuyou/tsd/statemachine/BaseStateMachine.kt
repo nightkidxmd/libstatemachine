@@ -33,7 +33,7 @@ abstract class BaseStateMachine(name: String,private val stateHandlersMap:Map<KC
         return this
     }
 
-    internal fun addTransition(what:Int,state: BaseState){
+    fun addTransition(what:Int,state: BaseState){
         if(transitionMap[what] != null){
             throw  IllegalArgumentException("<$what,$state> already added")
         }
