@@ -1,5 +1,6 @@
 package com.tuyou.tsd.statemachine
 
+
 import com.tuyou.tsd.statemachine.log.L
 import com.tuyou.tsd.statemachine.message.LinkedMessageQueue
 import com.tuyou.tsd.statemachine.message.Message
@@ -8,8 +9,7 @@ import com.tuyou.tsd.statemachine.thread.Handler
 import com.tuyou.tsd.statemachine.thread.Looper
 
 import org.junit.Test
-
-
+import kotlin.reflect.KClass
 
 
 /**
@@ -71,6 +71,27 @@ class TestStateMachine {
         test.join()
     }
 
+    @Test
+    fun testAbsPollOnceThread(){
+        val test = TestThread()
+        test.start()
+        test.pollOnce()
+        Thread.sleep(200)
+        test.exit()
+        test.join()
+    }
+
+
+    @Test
+    fun testBaseStateMachine(){
+        val test = TestBaseStateMachine(mapOf()).initAndStart()
+        for (i in 1..5) {
+            test.sendMessage(Message.obtain(i))
+        }
+        test.quit()
+        test.join()
+    }
+
     private class TestThread : AbsPollOnceThread() {
         override fun onPollOnce() {
             L.log(message = "onPollOnce")
@@ -84,6 +105,135 @@ class TestStateMachine {
             L.log(message = "onExit")
         }
 
+    }
+
+
+
+    private class TestBaseStateMachine(stateHandlersMap:Map<KClass<*>, StateHandler>):BaseStateMachine("TestBaseStateMachine",stateHandlersMap){
+
+        /**
+         * 初始化状态转移Map,使用方法{@link addTransition}
+         */
+        override fun onInitTransitionMap() {
+            addTransition(MESSAGE_STATE1,state1)
+            addTransition(MESSAGE_STATE2,state2)
+            addTransition(MESSAGE_STATE3,state3)
+            addTransition(MESSAGE_STATE4,state4)
+            addTransition(MESSAGE_STATE5,state5)
+        }
+
+        /**
+         * 初始化状态树
+         */
+        override fun onInitStateTree() {
+            state1 = State1()
+            state2 = State2()
+            state3 = State3()
+            state4 = State4()
+            state5 = State5()
+            addState(state1)
+            addState(state2, state1)
+            addState(state3, state1)
+            addState(state4, state3)
+            addState(state5, state3)
+        }
+
+        /**
+         * 指定初始化状态
+         */
+        override fun getInitialState(): BaseState = state1
+
+        companion object {
+            const val MESSAGE_STATE1 = 1
+            const val MESSAGE_STATE2 = 2
+            const val MESSAGE_STATE3 = 3
+            const val MESSAGE_STATE4 = 4
+            const val MESSAGE_STATE5 = 5
+        }
+
+
+        private lateinit var state1:State1
+        private lateinit var state2:State2
+        private lateinit var state3:State3
+        private lateinit var state4:State4
+        private lateinit var state5:State5
+
+
+        inner class State1 : BaseState(this@TestBaseStateMachine){
+            override fun processMessage(msg: Message): Boolean = run{
+                when(msg.what){
+                    MESSAGE_STATE3->{
+                        sendMessageAtFrontOfQueue(msg.what)
+                        super.processMessage(msg)
+                    }
+                    MESSAGE_STATE2->{
+                        deferMessage(msg)
+                        HANDLED
+                    }
+                    else->{
+                        super.processMessage(msg)
+                    }
+                }
+
+            }
+        }
+        inner class State2 : BaseState(this@TestBaseStateMachine){
+            override fun processMessage(msg: Message): Boolean  = run {
+                when (msg.what) {
+                    MESSAGE_STATE2 -> {HANDLED}
+                    MESSAGE_STATE3->{
+                        sendMessageAtFrontOfQueue(msg.what)
+                        super.processMessage(msg)
+                    }
+                    else -> { super.processMessage(msg) }
+                }
+            }
+        }
+        inner class State3 : BaseState(this@TestBaseStateMachine){
+            override fun processMessage(msg: Message): Boolean  = when(msg.what){
+                MESSAGE_STATE3->{
+                    HANDLED
+                }
+                MESSAGE_STATE2->{
+                    deferMessage(msg)
+                    HANDLED
+                }
+                else->{
+                    super.processMessage(msg)
+                }
+            }
+        }
+        inner class State4 : BaseState(this@TestBaseStateMachine){
+            override fun processMessage(msg: Message): Boolean = run{
+                when(msg.what){
+                    MESSAGE_STATE3->{
+                        sendMessageAtFrontOfQueue(msg.what)
+                        super.processMessage(msg)
+
+                    }
+                    MESSAGE_STATE2->{
+                        deferMessage(msg)
+                        HANDLED
+                    }
+                    else->{
+                        super.processMessage(msg)
+                    }
+                }
+            }
+        }
+        inner class State5 : BaseState(this@TestBaseStateMachine){
+            override fun processMessage(msg: Message): Boolean = run{
+                when(msg.what){
+                    MESSAGE_STATE3->{
+                        sendMessageAtFrontOfQueue(msg.what)
+                        super.processMessage(msg)
+                    }
+                    else->{
+                        super.processMessage(msg)
+                    }
+                }
+            }
+        }
     }
 
 
@@ -130,7 +280,6 @@ class TestStateMachine {
             }
 
             override fun processMessage(msg: Message): Boolean {
-                L.log(message = "$this process:$msg")
                 when (msg.what) {
                     MESSAGE_STATE1, MESSAGE_STATE4, MESSAGE_STATE5 -> {
                         transitionTo(msg)

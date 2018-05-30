@@ -81,7 +81,7 @@ abstract class StateMachine : Looper {
 
 
         fun addState(state: IState, parent: IState?): StateInfo? {
-            L.log(message = "add $state $parent")
+            L.log(tag = stateMachine?.name,message = "add $state $parent")
             var parentStateInfo: StateInfo? = null
             if(parent != null) {
                 parentStateInfo = stateInfoMap[parent]
@@ -92,7 +92,7 @@ abstract class StateMachine : Looper {
             var stateInfo = stateInfoMap[state]
             if(stateInfo == null) {
                 stateInfo = StateInfo()
-                stateInfoMap.put(state, stateInfo)
+                stateInfoMap[state] = stateInfo
             }
 
             if ((stateInfo.parent != null) && (stateInfo.parent != parentStateInfo)) {
@@ -277,11 +277,11 @@ abstract class StateMachine : Looper {
         smHandler.addState(state, parent)
     }
 
-    protected fun unhandledMessage(msg: Message){
-        L.loge(message = " - unhandledMessage: msg.what=${msg.what}")
+    protected fun unhandledMessage(msg: Message?){
+        L.loge(tag = name,message = " - unhandledMessage: msg.what=${msg?.what}")
     }
 
-    protected open fun haledProcessMessage(msg: Message){
+    protected open fun haledProcessMessage(msg: Message?){
 
     }
 
@@ -290,7 +290,7 @@ abstract class StateMachine : Looper {
     }
 
     protected open fun onQuitting(){
-        L.log(message = " - onQuitting")
+        L.log(tag = name,message = " - onQuitting")
     }
 
     fun sendMessageAtFrontOfQueue(message: Message) =

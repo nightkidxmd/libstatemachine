@@ -9,13 +9,13 @@ import com.tuyou.tsd.statemachine.message.Message
 abstract class SState:IState {
     override fun enter() {
         if(DEBUG){
-            L.log("SState","enter-->$name{${toString()}}")
+            L.log("SState","enter-->$this")
         }
     }
 
     override fun exit() {
         if(DEBUG){
-            L.log("SState","exit<--${toString()}")
+            L.log("SState","exit<---$this")
         }
     }
 

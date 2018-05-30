@@ -24,12 +24,12 @@ public interface IState {
     /**
      * Returned by processMessage to indicate the the msg was processed.
      */
-    static final boolean HANDLED = true;
+    boolean HANDLED = true;
 
     /**
      * Returned by processMessage to indicate the the msg was NOT processed.
      */
-    static final boolean NOT_HANDLED = false;
+    boolean NOT_HANDLED = false;
 
     /**
      * Called when a state is entered.
