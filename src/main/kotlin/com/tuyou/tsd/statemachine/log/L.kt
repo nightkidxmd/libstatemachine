@@ -10,7 +10,7 @@ import java.util.*
 
 object L {
     private val logger: SystemOutLogger by lazy { SystemOutLogger() }
-    private val dateFormat: SimpleDateFormat by lazy { SimpleDateFormat("HH:mm:ss") }
+    private val dateFormat: SimpleDateFormat by lazy { SimpleDateFormat("yyyy-MM-dd HH:mm:ss") }
 
     private enum class LogType {
         OUT,

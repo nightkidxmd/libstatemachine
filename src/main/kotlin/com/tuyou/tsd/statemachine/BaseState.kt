@@ -16,7 +16,7 @@ abstract class BaseState(private val stateMachine: BaseStateMachine):SState(){
     }
 
     override fun processMessage(msg: Message): Boolean {
-        return stateMachine.onProcessMessage(msg) || super.processMessage(msg)
+        return stateMachine.onProcessMessage(this,msg) || super.processMessage(msg)
     }
 
     override fun toString(): String = getName()

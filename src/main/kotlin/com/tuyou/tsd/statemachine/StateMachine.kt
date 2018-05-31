@@ -112,7 +112,7 @@ abstract class StateMachine : Looper {
         }
 
         fun deferMessage(message: Message) {
-            defferMessageQueue.addTail(message.copy())
+            defferMessageQueue.addTail(Message.obtain(message))
         }
 
         fun completeConstruction() = with(stateMachine!!) {

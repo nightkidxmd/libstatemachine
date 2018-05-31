@@ -84,9 +84,26 @@ class TestStateMachine {
 
     @Test
     fun testBaseStateMachine(){
-        val test = TestBaseStateMachine(mapOf()).initAndStart()
-        for (i in 1..5) {
-            test.sendMessage(Message.obtain(i))
+        val test = TestBaseStateMachine(mapOf(
+                TestBaseStateMachine.State1::class to object : BaseStateMachine.StateHandler() {
+                    override fun onStateEnter(state: BaseState, msg: Message?) {
+                        super.onStateEnter(state, msg)
+                        L.log(message = "onStateEnter $state")
+                    }
+
+                    override fun onStateExit(state: BaseState, msg: Message?) {
+                        super.onStateExit(state, msg)
+                        L.log(message = "onStateExit $state")
+                    }
+
+                    override fun onProcessMessage(msg: Message?): Boolean {
+                        L.log(message = "onProcessMessage $msg")
+                        return super.onProcessMessage(msg)
+                    }
+                }
+        )).initAndStart()
+        arrayOf(1,6,2,3,4,5).forEach {
+            test.sendMessage(Message.obtain(it))
         }
         test.quit()
         test.join()
@@ -161,6 +178,7 @@ class TestStateMachine {
 
         inner class State1 : BaseState(this@TestBaseStateMachine){
             override fun processMessage(msg: Message): Boolean = run{
+                L.log(message = "processMessage $msg")
                 when(msg.what){
                     MESSAGE_STATE3->{
                         sendMessageAtFrontOfQueue(msg.what)

@@ -4,7 +4,7 @@ package com.tuyou.tsd.statemachine
 import com.tuyou.tsd.statemachine.message.Message
 import kotlin.reflect.KClass
 
-abstract class BaseStateMachine(name: String,private val stateHandlersMap:Map<KClass<*>, StateHandler>):StateMachine(name){
+abstract class BaseStateMachine(name: String,var stateHandlersMap:Map<KClass<*>, StateHandler>? = null):StateMachine(name){
 
     private val transitionMap = HashMap<Int,BaseState>()
 
@@ -47,22 +47,22 @@ abstract class BaseStateMachine(name: String,private val stateHandlersMap:Map<KC
     }
 
     internal fun onStateEnter(state: BaseState, msg: Message?) {
-        stateHandlersMap[state::class]?.onStateEnter(state,msg)
+        stateHandlersMap?.get(state::class)?.onStateEnter(state,msg)
     }
 
     internal fun onStateExit(state: BaseState, msg: Message?) {
-        stateHandlersMap[state::class]?.onStateExit(state,msg)
+        stateHandlersMap?.get(state::class)?.onStateExit(state,msg)
     }
 
-    internal fun onProcessMessage(msg: Message): Boolean {
+    internal fun onProcessMessage(state: BaseState,msg: Message): Boolean {
         if(transitionMap[msg.what] != null){
             transitionTo(msg)
             return HANDLED
         }
-        return stateHandlersMap[state::class]?.onProcessMessage(msg)?: NOT_HANDLED
+        return stateHandlersMap?.get(state::class)?.onProcessMessage(msg)?: NOT_HANDLED
     }
 
-    open inner class StateHandler {
+    open class StateHandler {
         open fun onStateEnter(state:BaseState,msg: Message?) = Unit
         open fun onStateExit(state:BaseState,msg: Message?) = Unit
         open fun onProcessMessage(msg:Message?):Boolean = StateMachine.NOT_HANDLED
