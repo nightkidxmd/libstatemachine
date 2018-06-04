@@ -4,7 +4,7 @@ package com.tuyou.tsd.statemachine
 import com.tuyou.tsd.statemachine.message.Message
 import kotlin.reflect.KClass
 
-abstract class BaseStateMachine(name: String,var stateHandlersMap:Map<KClass<*>, StateHandler>? = null):StateMachine(name){
+abstract class BaseStateMachine(name: String, var stateHandlersMap:Map<KClass<*>, StateHandler>? = null):StateMachine(name){
 
     private val transitionMap = HashMap<Int,BaseState>()
 

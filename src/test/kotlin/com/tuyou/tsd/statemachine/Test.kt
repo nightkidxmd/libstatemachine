@@ -152,7 +152,7 @@ class TestStateMachine {
             addState(state2, state1)
             addState(state3, state1)
             addState(state4, state3)
-            addState(state5, state3)
+            addState(state5, state2)
         }
 
         /**

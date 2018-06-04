@@ -13,7 +13,7 @@ import java.util.*
  */
 abstract class StateMachine : Looper {
 
-    constructor(name: String) : this(name, SmHandler())
+    constructor(name: String) : this(name, SmHandler(name))
     private constructor(name: String, smHandler: SmHandler) : super(name, smHandler) {
         this.smHandler = smHandler
         this.smHandler.stateMachine = this
@@ -35,7 +35,7 @@ abstract class StateMachine : Looper {
         private const val SM_INIT_CMD = -2
     }
 
-    private class SmHandler : Handler() {
+    private class SmHandler(private val name:String) : Handler() {
         private val smHandlerObj = Any()
         private val defferMessageQueue: LinkedMessageQueue = LinkedMessageQueue()
         val haltingState = HaltingState()
@@ -45,11 +45,14 @@ abstract class StateMachine : Looper {
             addState(haltingState, null)
             addState(quittingState, null)
         }
-        class StateInfo {
+        private inner class StateInfo {
             var state: IState? = null
             var parent: StateInfo? = null
             var active = false
             var depth = 1
+            var children = LinkedList<StateInfo>()
+            var width = 0
+            var position = 0
             override fun toString(): String {
                 return "StateInfo(state=$state, parent=$parent, active=$active, depth=$depth)"
             }
@@ -73,7 +76,7 @@ abstract class StateMachine : Looper {
             }
         }
 
-        private class QuittingState: SState(){
+        inner class QuittingState: SState(){
             override fun processMessage(msg: Message): Boolean {
                 return NOT_HANDLED
             }
@@ -104,6 +107,13 @@ abstract class StateMachine : Looper {
             if (parentStateInfo != null) {
                 stateInfo.depth = parentStateInfo.depth.plus(1)
             }
+            stateInfo.position = parentStateInfo?.run{
+                position + width/2 + 3
+            }?:0
+            stateInfo.width = state.getName().length
+            parentStateInfo?.apply {
+                children.add(stateInfo)
+            }
             return stateInfo
         }
 
@@ -124,8 +134,54 @@ abstract class StateMachine : Looper {
             stateStack = arrayOfNulls(maxDepth)
             tempStateStack = arrayOfNulls(maxDepth)
             setupInitialStateStack()
+            printStateTree()
             sendMessageAtFrontOfQueue(what = SM_INIT_CMD, obj = smHandlerObj)
         }
+
+        private fun printStateTree(){
+            val visited = HashSet<StateInfo?>()
+            val stack = Stack<StateInfo?>()
+            L.log(name, "----------------State Tree------------------",true)
+            stateInfoMap.values.asSequence().toList().sortedBy { it.depth }
+                    .filter { it.state != quittingState && it.state != haltingState }
+                    .forEach {
+                        if(!visited.contains(it)){
+                            printStateInfo(it)
+                            stack.add(it)
+                            visited.add(it)
+                        }
+                        while(!stack.isEmpty()){
+                            with(stack.peek()){
+                                (this?.children?.poll()).also{
+                                    if(it == null){
+                                       stack.pop()
+                                    }else{
+                                        if(!visited.contains(it)){
+                                            printStateInfo(it)
+                                            stack.add(it)
+                                            visited.add(it)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+            L.log(name, "--------------------------------------------", true)
+        }
+
+        private fun printStateInfo(stateInfo: StateInfo){
+            val sb = StringBuilder()
+            if (stateInfo.depth > 1) {
+                (1 until stateInfo.parent!!.position + stateInfo.parent!!.width / 2).forEach {
+                    sb.append(" ")
+                }
+                sb.append("|")
+                sb.append("---")
+            }
+            sb.append(stateInfo.state!!.getName())
+            L.log(name, sb.toString(),true)
+        }
+
 
         fun quit() = with(stateMachine!!){
             sendMessage(what = SM_QUIT_CMD,obj = smHandlerObj)

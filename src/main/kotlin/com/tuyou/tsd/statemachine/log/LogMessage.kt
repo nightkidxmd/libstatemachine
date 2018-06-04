@@ -5,6 +5,7 @@ class LogMessage(private val time: String,
                  private val tag: String,
                  private val message: String,
                  private val fileName: String,
-                 private val lineNumber: Int) {
-    override fun toString(): String = "$time $tid $tag $message($fileName:$lineNumber)"
+                 private val lineNumber: Int,
+                 private val noStack:Boolean = false) {
+    override fun toString(): String = if(noStack) "$time $tid $tag $message" else "$time $tid $tag $message($fileName:$lineNumber)"
 }

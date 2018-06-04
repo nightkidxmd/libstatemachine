@@ -17,23 +17,23 @@ object L {
         ERR
     }
 
-    fun log(tag: String? = null, message: String) {
-        _log(LogType.OUT, tag, message)
+    fun log(tag: String? = null, message: String, noStack:Boolean = false) {
+        _log(LogType.OUT, tag, message,noStack)
     }
 
-    fun loge(tag: String? = null, message: String) {
-        _log(LogType.ERR, tag, message)
+    fun loge(tag: String? = null, message: String,noStack:Boolean = false) {
+        _log(LogType.ERR, tag, message,noStack)
     }
 
-    private fun _log(type: LogType, tag: String?, message: String) {
+    private fun _log(type: LogType, tag: String?, message: String,noStack:Boolean = false) {
         val stackTrace = if (tag == null) getStackTrackElement(5) else getStackTrackElement(4)
         val currentTime = System.currentTimeMillis()
-        val time = String.format("%s.%03d", "${dateFormat.format(Date(currentTime))}", currentTime % 1000)
+        val time = String.format("%s.%03d", dateFormat.format(Date(currentTime)), currentTime % 1000)
         val tid = String.format("%-3d", getThreadId())
         val _tag = "${tag ?: getTag(stackTrace)}:"
         val fileName = stackTrace.fileName
         val lineNumber = stackTrace.lineNumber
-        with(LogMessage(time, tid, _tag, message, fileName, lineNumber)){
+        with(LogMessage(time, tid, _tag, message, fileName, lineNumber,noStack)){
             when (type) {
                 LogType.OUT -> {
                     logger.log(this)
