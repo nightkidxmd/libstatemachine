@@ -48,6 +48,11 @@ abstract class AbsPollOnceThread : Thread {
         })
     }
 
+    fun exitSyc(millis:Long = 0){
+        exit()
+        join(millis)
+    }
+
     override fun start() {
         super.start()
         semaphore.acquire()

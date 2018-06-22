@@ -25,4 +25,6 @@ class LinkedBlockingDequeMessageQueue:IMessageQueue<LinkedBlockingDeque<Message>
     override fun addAll(messageQueue: IMessageQueue<LinkedBlockingDeque<Message>>) {
         messages.addAll(messageQueue.getMessages()!!)
     }
+
+    override fun isEmpty(): Boolean  = messages.isEmpty()
 }

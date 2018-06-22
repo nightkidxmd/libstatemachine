@@ -22,7 +22,7 @@ open class Looper(name:String, private val handler: Handler): AbsPollOnceThread(
 
     private val messageQueue:IMessageQueue<*> = LinkedMessageQueue()
     override fun onPollOnce() {
-        while (isRunning){
+        while (isRunning && !messageQueue.isEmpty()){
             val message =  messageQueue.next()
             if(message != null){
                 when(message.what){
@@ -56,6 +56,11 @@ open class Looper(name:String, private val handler: Handler): AbsPollOnceThread(
 
     fun exitSafely(){
         dispatchMessage(Message(what = MESSAGE_EXIT,obj = exitObj))
+    }
+
+    fun exitSafelySyc(millis:Long = 0){
+        dispatchMessage(Message(what = MESSAGE_EXIT,obj = exitObj))
+        join(millis)
     }
 
     private val exitObj = ExitObj()

@@ -15,4 +15,6 @@ interface IMessageQueue<T>{
     fun addAll(messageQueue: IMessageQueue<T>)
 
     fun clear()
+
+    fun isEmpty():Boolean
 }
