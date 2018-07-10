@@ -6,12 +6,16 @@ import com.tuyou.tsd.statemachine.message.Message
 abstract class BaseState(private val stateMachine: BaseStateMachine):SState(){
     internal var message: Message? = null
     override fun enter() {
-        L.log(stateMachine.name,"enter-->$this")
+        if(stateMachine.DEBUG){
+            L.log(stateMachine.name,"enter-->$this")
+        }
         stateMachine.onStateEnter(this,message)
     }
 
     override fun exit() {
-        L.log(stateMachine.name,"exit<---$this")
+        if(stateMachine.DEBUG){
+            L.log(stateMachine.name,"exit<---$this")
+        }
         stateMachine.onStateExit(this,message)
     }
 

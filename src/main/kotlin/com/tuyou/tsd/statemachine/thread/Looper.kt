@@ -58,6 +58,11 @@ open class Looper(name:String, private val handler: Handler): AbsPollOnceThread(
         dispatchMessage(Message(what = MESSAGE_EXIT,obj = exitObj))
     }
 
+    fun exitSafelySyc(millis:Long = 0){
+        dispatchMessage(Message(what = MESSAGE_EXIT,obj = exitObj))
+        join(millis)
+    }
+
     private val exitObj = ExitObj()
 
     private inner class ExitObj

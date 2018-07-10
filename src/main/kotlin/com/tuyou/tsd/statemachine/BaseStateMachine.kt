@@ -8,6 +8,8 @@ abstract class BaseStateMachine(name: String, var stateHandlersMap:Map<KClass<*>
 
     private val transitionMap = HashMap<Int,BaseState>()
 
+    var DEBUG = true
+
     /**
      * 初始化状态转移Map,使用方法{@link addTransition}
      */

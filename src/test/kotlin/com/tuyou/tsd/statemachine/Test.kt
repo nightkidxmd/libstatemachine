@@ -20,22 +20,32 @@ class TestStateMachine {
 
     @Test
     fun testMessageQueue(){
-        val amount = 1000
+        val amount = 100000
+        val lock = Object()
         with(Looper("test", object : Handler() {
             private var sum = 0
             override fun handleMessage(msg: Message) {
                 sum += 1
-                if(msg.what == amount){
+                L.log(message = "$sum  ${msg.what} $amount")
+                TestUtil.assertTrue(msg.what,sum)
+                if(sum == amount){
                     L.log(message = "$sum  ${msg.what} $amount")
                     TestUtil.assertTrue(amount,sum)
+                    synchronized(lock,{lock.notify()})
                 }
 
             }
         })) {
             start()
             for (i in 1..amount) {
-                dispatchMessage(Message.obtain(i))
+                Thread{
+                    dispatchMessage(Message.obtain(i))
+                }.let {
+                    it.start()
+                    it.join()
+                }
             }
+            synchronized(lock,{lock.wait()})
             exitSafely()
             join()
         }
