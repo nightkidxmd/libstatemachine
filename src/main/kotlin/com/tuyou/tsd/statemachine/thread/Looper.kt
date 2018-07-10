@@ -22,7 +22,7 @@ open class Looper(name:String, private val handler: Handler): AbsPollOnceThread(
 
     private val messageQueue:IMessageQueue<*> = LinkedMessageQueue()
     override fun onPollOnce() {
-        while (isRunning){
+        while (isRunning && !messageQueue.isEmpty()){
             val message =  messageQueue.next()
             if(message != null){
                 when(message.what){
