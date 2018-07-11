@@ -2,13 +2,13 @@ package com.tuyou.tsd.statemachine.thread
 
 
 import com.tuyou.tsd.statemachine.message.IMessageQueue
-import com.tuyou.tsd.statemachine.message.Message
 import com.tuyou.tsd.statemachine.message.LinkedMessageQueue
+import com.tuyou.tsd.statemachine.message.Message
 
 /**
  * Created by XMD on 2017/7/21.
  */
-open class Looper(name:String, private val handler: Handler): AbsPollOnceThread(name){
+open class Looper(name:String, var handler: Handler? = null): AbsPollOnceThread(name){
 
     companion object {
         private const val MESSAGE_EXIT = Int.MIN_VALUE
@@ -16,42 +16,60 @@ open class Looper(name:String, private val handler: Handler): AbsPollOnceThread(
 
     override fun onStart() = Unit
 
+    private val dispatchWork = object :Work<Message>{
+        override fun pollOnceWork(data: Message?) {
+            messageQueue.addTail(data!!)
+        }
+    }
+
+    private val dispatchFrontWork = object :Work<Message>{
+        override fun pollOnceWork(data: Message?) {
+            messageQueue.addHead(data!!)
+        }
+    }
+
     override fun onExit() {
+        lock()
         messageQueue.clear()
+        unlock()
     }
 
     private val messageQueue:IMessageQueue<*> = LinkedMessageQueue()
     override fun onPollOnce() {
         while (isRunning){
-            val message =  messageQueue.next()
-            if(message != null){
-                when(message.what){
-                    MESSAGE_EXIT->{
-                        if(message.obj == exitObj){
-                            exit()
-                        }else{
-                            handler.handleMessage(message)
+            with(messageQueue.next()){
+                if(this != null){
+                    when(this.what){
+                        MESSAGE_EXIT->{
+                            if(this.obj == exitObj){
+                                exit()
+                            }else{
+                                handler?.handleMessage(this)
+                            }
+                        }
+                        else->{
+                            handler?.handleMessage(this)
                         }
                     }
-                    else->{
-                        handler.handleMessage(message)
+                    this.recycle()
+                }else{
+                    lock()
+                    if(messageQueue.isEmpty()){
+                        return
+                    } else {
+                        unlock()
                     }
                 }
-            }else{
-                break
             }
-            message.recycle()
         }
     }
 
     fun dispatchMessage(msg: Message){
-        messageQueue.addTail(msg)
-        pollOnce()
+        pollOnce(dispatchWork,msg)
     }
 
     fun dispatchMessageAtFrontOfQueue(msg: Message){
-        messageQueue.addHead(msg)
-        pollOnce()
+        pollOnce(dispatchFrontWork,msg)
     }
 
     fun exitSafely(){

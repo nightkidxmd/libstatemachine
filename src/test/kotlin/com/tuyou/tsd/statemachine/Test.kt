@@ -9,6 +9,7 @@ import com.tuyou.tsd.statemachine.thread.Handler
 import com.tuyou.tsd.statemachine.thread.Looper
 
 import org.junit.Test
+import java.util.*
 import kotlin.reflect.KClass
 
 
@@ -19,39 +20,117 @@ class TestStateMachine {
 
 
     @Test
-    fun testMessageQueue(){
+    fun testMessageQueue() {
         val amount = 100000
         val lock = Object()
-        with(Looper("test", object : Handler() {
-            private var sum = 0
-            override fun handleMessage(msg: Message) {
-                sum += 1
-                L.log(message = "$sum  ${msg.what} $amount")
-                TestUtil.assertTrue(msg.what,sum)
-                if(sum == amount){
+        with(Looper("test")) {
+            handler = object : Handler() {
+                private var sum = 0
+                override fun handleMessage(msg: Message) {
+                    sum += 1
                     L.log(message = "$sum  ${msg.what} $amount")
-                    TestUtil.assertTrue(amount,sum)
-                    synchronized(lock,{lock.notify()})
-                }
+                    TestUtil.assertTrue(msg.what, sum)
+                    if (sum == amount) {
+                        L.log(message = "$sum  ${msg.what} $amount")
+                        synchronized(lock, { lock.notify() })
+                    } else {
+                        if (sum % 2 == 0) {
+                            dispatchMessage(Message.obtain(sum + 1))
+                        } else {
+                            Thread {
+                                dispatchMessage(Message.obtain(sum + 1))
+                            }.start()
+                        }
+                    }
 
-            }
-        })) {
-            start()
-            for (i in 1..amount) {
-                Thread{
-                    dispatchMessage(Message.obtain(i))
-                }.let {
-                    it.start()
-                    it.join()
                 }
             }
-            synchronized(lock,{lock.wait()})
+            start()
+            dispatchMessage(Message.obtain(1))
+            synchronized(lock, { lock.wait() })
             exitSafely()
             join()
         }
     }
 
-    @Test fun testAddRemoveLastMessage(){
+    @Test
+    fun testMessageQueue2() {
+        val amount = 100000
+        val lock = Object()
+        with(Looper("test")) {
+            handler = object : Handler() {
+                private var sum = 0
+                override fun handleMessage(msg: Message) {
+                    sum += 1
+                    L.log(message = "$sum  ${msg.what} $amount")
+                    TestUtil.assertTrue(msg.what, sum)
+                    if (sum == amount) {
+                        L.log(message = "$sum  ${msg.what} $amount")
+                        synchronized(lock, { lock.notify() })
+                    }
+
+                }
+            }
+            start()
+            for (i in 1..amount) {
+                if (i % 2 == 0) {
+                    dispatchMessage(Message.obtain(i))
+                } else {
+                    Thread {
+                        dispatchMessage(Message.obtain(i))
+                    }.let {
+                        it.start()
+                        it.join()
+                    }
+                }
+            }
+            synchronized(lock, { lock.wait() })
+            exitSafely()
+            join()
+        }
+    }
+
+
+    @Test
+    fun testMessageQueue3() {
+        val amount = 1
+        val TEST_COUNT = 1000
+        val lock = Object()
+        with(Looper("test")) {
+            handler = object : Handler() {
+                override fun handleMessage(msg: Message) {
+                    L.log(message = "${msg.what} $amount")
+                    Thread.sleep((50  + Random().nextInt(500)).toLong())
+                    if (msg.what == amount) {
+                        synchronized(lock, { lock.notify() })
+                    }
+                }
+            }
+            start()
+            for(c in 1..TEST_COUNT){
+                val startTime = System.currentTimeMillis()
+                for (i in 1..amount) {
+                    dispatchMessage(Message.obtain(i))
+                }
+                (System.currentTimeMillis()-startTime).apply{
+                    L.log(message = "$c :cost $this")
+                    TestUtil.assertTrue(this < 50,
+                            "dispatch blocked $this")
+                }
+                synchronized(lock, {
+                    L.log(message = "$c :wait...")
+                    lock.wait() })
+            }
+
+            L.log(message = "exit")
+            exitSafely()
+            join()
+        }
+    }
+
+
+    @Test
+    fun testAddRemoveLastMessage() {
         val messageQueue = LinkedMessageQueue()
 
         (1..10).forEach {
@@ -59,7 +138,7 @@ class TestStateMachine {
         }
 
         (10 downTo 1).forEach {
-            TestUtil.assertTrue(it,messageQueue.next()?.what)
+            TestUtil.assertTrue(it, messageQueue.next()?.what)
         }
 
         (1..10).forEach {
@@ -67,7 +146,7 @@ class TestStateMachine {
         }
 
         (1..10).forEach {
-            TestUtil.assertTrue(it,messageQueue.next()?.what)
+            TestUtil.assertTrue(it, messageQueue.next()?.what)
         }
     }
 
@@ -82,10 +161,10 @@ class TestStateMachine {
     }
 
     @Test
-    fun testAbsPollOnceThread(){
+    fun testAbsPollOnceThread() {
         val test = TestThread()
         test.start()
-        test.pollOnce()
+        test.pollOnce(null,null)
         Thread.sleep(200)
         test.exit()
         test.join()
@@ -93,7 +172,7 @@ class TestStateMachine {
 
 
     @Test
-    fun testBaseStateMachine(){
+    fun testBaseStateMachine() {
         val test = TestBaseStateMachine(mapOf(
                 TestBaseStateMachine.State1::class to object : BaseStateMachine.StateHandler() {
                     override fun onStateEnter(state: BaseState, msg: Message?) {
@@ -112,7 +191,7 @@ class TestStateMachine {
                     }
                 }
         )).initAndStart()
-        arrayOf(1,6,2,3,4,5).forEach {
+        arrayOf(1, 6, 2, 3, 4, 5).forEach {
             test.sendMessage(Message.obtain(it))
         }
         test.quit()
@@ -135,18 +214,17 @@ class TestStateMachine {
     }
 
 
-
-    private class TestBaseStateMachine(stateHandlersMap:Map<KClass<*>, StateHandler>):BaseStateMachine("TestBaseStateMachine",stateHandlersMap){
+    private class TestBaseStateMachine(stateHandlersMap: Map<KClass<*>, StateHandler>) : BaseStateMachine("TestBaseStateMachine", stateHandlersMap) {
 
         /**
          * 初始化状态转移Map,使用方法{@link addTransition}
          */
         override fun onInitTransitionMap() {
-            addTransition(MESSAGE_STATE1,state1)
-            addTransition(MESSAGE_STATE2,state2)
-            addTransition(MESSAGE_STATE3,state3)
-            addTransition(MESSAGE_STATE4,state4)
-            addTransition(MESSAGE_STATE5,state5)
+            addTransition(MESSAGE_STATE1, state1)
+            addTransition(MESSAGE_STATE2, state2)
+            addTransition(MESSAGE_STATE3, state3)
+            addTransition(MESSAGE_STATE4, state4)
+            addTransition(MESSAGE_STATE5, state5)
         }
 
         /**
@@ -179,84 +257,92 @@ class TestStateMachine {
         }
 
 
-        private lateinit var state1:State1
-        private lateinit var state2:State2
-        private lateinit var state3:State3
-        private lateinit var state4:State4
-        private lateinit var state5:State5
+        private lateinit var state1: State1
+        private lateinit var state2: State2
+        private lateinit var state3: State3
+        private lateinit var state4: State4
+        private lateinit var state5: State5
 
 
-        inner class State1 : BaseState(this@TestBaseStateMachine){
-            override fun processMessage(msg: Message): Boolean = run{
+        inner class State1 : BaseState(this@TestBaseStateMachine) {
+            override fun processMessage(msg: Message): Boolean = run {
                 L.log(message = "processMessage $msg")
-                when(msg.what){
-                    MESSAGE_STATE3->{
+                when (msg.what) {
+                    MESSAGE_STATE3 -> {
                         sendMessageAtFrontOfQueue(msg.what)
                         super.processMessage(msg)
                     }
-                    MESSAGE_STATE2->{
+                    MESSAGE_STATE2 -> {
                         deferMessage(msg)
                         HANDLED
                     }
-                    else->{
+                    else -> {
                         super.processMessage(msg)
                     }
                 }
 
             }
         }
-        inner class State2 : BaseState(this@TestBaseStateMachine){
-            override fun processMessage(msg: Message): Boolean  = run {
+
+        inner class State2 : BaseState(this@TestBaseStateMachine) {
+            override fun processMessage(msg: Message): Boolean = run {
                 when (msg.what) {
-                    MESSAGE_STATE2 -> {HANDLED}
-                    MESSAGE_STATE3->{
+                    MESSAGE_STATE2 -> {
+                        HANDLED
+                    }
+                    MESSAGE_STATE3 -> {
                         sendMessageAtFrontOfQueue(msg.what)
                         super.processMessage(msg)
                     }
-                    else -> { super.processMessage(msg) }
+                    else -> {
+                        super.processMessage(msg)
+                    }
                 }
             }
         }
-        inner class State3 : BaseState(this@TestBaseStateMachine){
-            override fun processMessage(msg: Message): Boolean  = when(msg.what){
-                MESSAGE_STATE3->{
+
+        inner class State3 : BaseState(this@TestBaseStateMachine) {
+            override fun processMessage(msg: Message): Boolean = when (msg.what) {
+                MESSAGE_STATE3 -> {
                     HANDLED
                 }
-                MESSAGE_STATE2->{
+                MESSAGE_STATE2 -> {
                     deferMessage(msg)
                     HANDLED
                 }
-                else->{
+                else -> {
                     super.processMessage(msg)
                 }
             }
         }
-        inner class State4 : BaseState(this@TestBaseStateMachine){
-            override fun processMessage(msg: Message): Boolean = run{
-                when(msg.what){
-                    MESSAGE_STATE3->{
+
+        inner class State4 : BaseState(this@TestBaseStateMachine) {
+            override fun processMessage(msg: Message): Boolean = run {
+                when (msg.what) {
+                    MESSAGE_STATE3 -> {
                         sendMessageAtFrontOfQueue(msg.what)
                         super.processMessage(msg)
 
                     }
-                    MESSAGE_STATE2->{
+                    MESSAGE_STATE2 -> {
                         deferMessage(msg)
                         HANDLED
                     }
-                    else->{
+                    else -> {
                         super.processMessage(msg)
                     }
                 }
             }
         }
-        inner class State5 : BaseState(this@TestBaseStateMachine){
-            override fun processMessage(msg: Message): Boolean = run{
-                when(msg.what){
-                    MESSAGE_STATE3->{
+
+        inner class State5 : BaseState(this@TestBaseStateMachine) {
+            override fun processMessage(msg: Message): Boolean = run {
+                when (msg.what) {
+                    MESSAGE_STATE3 -> {
                         sendMessageAtFrontOfQueue(msg.what)
                         super.processMessage(msg)
                     }
-                    else->{
+                    else -> {
                         super.processMessage(msg)
                     }
                 }

@@ -1,6 +1,7 @@
 package com.tuyou.tsd.statemachine.thread
 
 import java.util.concurrent.Semaphore
+import java.util.concurrent.locks.ReentrantLock
 
 
 /**
@@ -21,19 +22,26 @@ abstract class AbsPollOnceThread : Thread {
     constructor(group: ThreadGroup?, target: Runnable?, name: String?, stackSize: Long) : super(group, target, name, stackSize)
     constructor(group: ThreadGroup?, target: (() -> Unit)?, name: String?, stackSize: Long) : super(group, target, name, stackSize)
 
-    private val lock = Object()
+    private val lock = ReentrantLock()
+    private val condition = lock.newCondition()
     protected var isRunning = true
     private val semaphore = Semaphore(0)
+    private val exitWork = object :Work<Void>{
+        override fun pollOnceWork(data: Void?) {
+            isRunning = false
+        }
+    }
+
     override fun run() {
         semaphore.release()
         onStart()
         while (isRunning) {
             onPollOnce()
-            synchronized(lock, block = {
-                if (isRunning) {
-                    lock.wait()
-                }
-            })
+            lock()
+            if (isRunning) {
+                condition.await()
+            }
+
             if (!isRunning) {
                 break
             }
@@ -41,11 +49,16 @@ abstract class AbsPollOnceThread : Thread {
         onExit()
     }
 
+    protected fun lock() {
+        lock.lock()
+    }
+
+    protected fun unlock() {
+        lock.unlock()
+    }
+
     open fun exit() {
-        synchronized(lock, block = {
-            isRunning = false
-            lock.notify()
-        })
+        pollOnce(exitWork)
     }
 
     fun exitSyc(millis:Long = 0){
@@ -58,13 +71,21 @@ abstract class AbsPollOnceThread : Thread {
         semaphore.acquire()
     }
 
-    fun pollOnce() {
-        synchronized(lock, block = {
-            lock.notify()
-        })
+    fun <T> pollOnce(work:Work<T>? = null, data:T?=null) {
+        lock()
+        try {
+            work?.pollOnceWork(data)
+            condition.signal()
+        }finally {
+            unlock()
+        }
     }
     //-----------------------------------------------------
     abstract fun onPollOnce()
     abstract fun onStart()
     abstract fun onExit()
+
+    interface Work<in T> {
+        fun pollOnceWork(data:T?=null)
+    }
 }

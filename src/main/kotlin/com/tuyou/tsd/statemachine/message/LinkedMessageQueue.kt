@@ -19,7 +19,7 @@ class LinkedMessageQueue : IMessageQueue<Message> {
                 var n = messages?.next
                 while (true) {
                     if (p == null) {
-                        message.next = p
+                        message.next = null
                         messages = message
                         break
                     } else if (n == null) {

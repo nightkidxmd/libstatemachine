@@ -8,6 +8,8 @@ object TestUtil{
     fun <T> assertTrue(expect: T, got: T) =
     Assert.assertTrue("\nexpect:\n$expect,\nbut got:\n$got", expect == got)
 
+    fun assertTrue(condition:Boolean, message:String) =
+            Assert.assertTrue(message,condition)
 
     fun printBuffer(buffer: ByteBuffer) {
         print("[ ")
